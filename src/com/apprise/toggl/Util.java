@@ -172,5 +172,15 @@ public class Util {
 
     return s.toString();
   }
+  
+  public static boolean todaysDateOrLater(Date date) {
+    Calendar cal = (Calendar) Calendar.getInstance().clone();
+    cal.set(Calendar.HOUR_OF_DAY, 0);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    Date beginningOfToday = cal.getTime();
+    
+    return date.after(beginningOfToday);
+  }
 
 }
