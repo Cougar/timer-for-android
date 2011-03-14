@@ -297,34 +297,38 @@ public class TogglWidget extends AppWidgetProvider {
   }
   
   private static void updateViews(Context context, RemoteViews views) {
-  	Task task = dbAdapter.findTask(tasksCursor.getLong(tasksCursor.getColumnIndex(Tasks._ID)));
-  	
-		views.setTextViewText(R.id.widget_top_text, task.description);
-		
-		StringBuilder s = new StringBuilder();
-		
-		if (task.project != null) {
-			if (task.project.client != null) {
-				s.append(task.project.client.name);
-				s.append(" - ");
-			}
-			
-			s.append(task.project.name);
-		}
-		
-		views.setTextViewText(R.id.widget_bottom_text, s.toString());
-
-		Date startDate = Util.parseStringToDate(task.start);
-		
-		if (Util.todaysDateOrLater(startDate)) {
-		  views.setTextViewText(R.id.widget_top_right_text, Util.secondsToHMS(task.duration));
-		}
-		else {
-	    PrettyTime pretty = new PrettyTime();
-		  views.setTextViewText(R.id.widget_top_right_text, pretty.format(startDate));  
-		}
-		
-		tasksCursor.deactivate();
+    
+    if (!tasksCursor.isClosed() && tasksCursor.getCount() > 0) {
+    
+    	Task task = dbAdapter.findTask(tasksCursor.getLong(tasksCursor.getColumnIndex(Tasks._ID)));
+    	
+  		views.setTextViewText(R.id.widget_top_text, task.description);
+  		
+  		StringBuilder s = new StringBuilder();
+  		
+  		if (task.project != null) {
+  			if (task.project.client != null) {
+  				s.append(task.project.client.name);
+  				s.append(" - ");
+  			}
+  			
+  			s.append(task.project.name);
+  		}
+  		
+  		views.setTextViewText(R.id.widget_bottom_text, s.toString());
+  
+  		Date startDate = Util.parseStringToDate(task.start);
+  		
+  		if (Util.todaysDateOrLater(startDate)) {
+  		  views.setTextViewText(R.id.widget_top_right_text, Util.secondsToHMS(task.duration));
+  		}
+  		else {
+  	    PrettyTime pretty = new PrettyTime();
+  		  views.setTextViewText(R.id.widget_top_right_text, pretty.format(startDate));  
+  		}
+  		
+  		tasksCursor.deactivate();
+    }
   }
   
   private void updateWidgetViaService(Context context, String ...actions) {
