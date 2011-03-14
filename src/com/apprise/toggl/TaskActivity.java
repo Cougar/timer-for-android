@@ -3,6 +3,8 @@ package com.apprise.toggl;
 import java.util.Calendar;
 import java.util.Date;
 
+import com.apprise.toggl.appwidget.TogglWidget;
+import com.apprise.toggl.appwidget.TogglWidget.TogglWidgetService;
 import com.apprise.toggl.remote.SyncService;
 import com.apprise.toggl.remote.exception.FailedResponseException;
 import com.apprise.toggl.storage.DatabaseAdapter;
@@ -168,6 +170,10 @@ public class TaskActivity extends ApplicationActivity {
       if ((task.description == null) || (task.description != null && !task.description.equals(descriptionView.getText().toString()))) {
         task.description = descriptionView.getText().toString();
         saveTask();
+
+        Intent widgetIntent = new Intent(this, TogglWidgetService.class);
+        widgetIntent.putExtra(TogglWidget.ACTION_UPDATE_VIEWS, true);
+        startService(widgetIntent);
       }
       if (task.sync_dirty) {
         new Thread(postTaskInBackground).start();        

@@ -64,9 +64,11 @@ public class SyncService extends Service {
   public static final String WORKSPACES_COMPLETED = "com.apprise.toggl.remote.WORKSPACES_COMPLETED";
   public static final String PLANNED_TASKS_COMPLETED = "com.apprise.toggl.remote.PLANNED_TASKS_COMPLETED";
   
+  public static final String SYNC_TASK_EXTRA_ID = "com.apprise.toggl.remote.SYNC_TASK_EXTRA_ID";
+  
   public static final String TAG = "SyncService";
   
-  public static boolean isSyncingAll = false;
+  public static boolean isBusySyncing = false;
   
   private TimeTrackingService trackingService;
   private Toggl app;
@@ -103,32 +105,63 @@ public class SyncService extends Service {
   
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
-    // explicitly started, not bound by an activity,
-    // hence start complete sync immediately
     
     ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
 
     // avoid interfering with explicitly started sync, respect backgrounddata setting
-    if (!isSyncingAll && connectivityManager.getBackgroundDataSetting()) {
-      isSyncingAll = true;
+    if (!isBusySyncing && connectivityManager.getBackgroundDataSetting()) {
+      
+      long syncTaskId = -1;
+      
+      if (intent != null) {
+        syncTaskId = intent.getLongExtra(SYNC_TASK_EXTRA_ID, -1);
+      }
+      
+      if (syncTaskId != -1) {
 
-      new Thread(new Runnable() {
-        public void run() {
-          try {
+        final long taskIdToSync = syncTaskId;
+        
+        new Thread() {
+          @Override
+          public void run() {
+            isBusySyncing = true;
+            
+            if (app.getCurrentUser() == null) {
+              app.retrieveCurrentUser(dbAdapter);
+              dbAdapter.setCurrentUser(app.getCurrentUser());
+            }
+            
+            Task syncTask = dbAdapter.findTask(taskIdToSync);
+            createOrUpdateRemoteTask(syncTask);
+            
+            isBusySyncing = false;
+          };
+        }.start();
+      }
+      else {
+        // explicitly started, not bound by an activity,
+        // hence start complete sync immediately
+        
+        isBusySyncing = true;
 
-            syncAllModels();
+        new Thread(new Runnable() {
+          public void run() {
+            try {
 
-            Intent intent = new Intent(SYNC_COMPLETED);
-            intent.putExtra(COLLECTION, ALL_COMPLETED_SCHEDULED);
-            sendBroadcast(intent);
-          } catch (Exception e) {
-            Log.e(TAG, "Error while syncing implicitly.", e);
-          } finally {
-            isSyncingAll = false;
-            stopSelf();            
+              syncAllModels();
+
+              Intent intent = new Intent(SYNC_COMPLETED);
+              intent.putExtra(COLLECTION, ALL_COMPLETED_SCHEDULED);
+              sendBroadcast(intent);
+            } catch (Exception e) {
+              Log.e(TAG, "Error while syncing implicitly.", e);
+            } finally {
+              isBusySyncing = false;
+              stopSelf();            
+            }
           }
-        }
-      }).start();
+        }).start(); 
+      }
     }
 
     return START_NOT_STICKY;
@@ -158,9 +191,9 @@ public class SyncService extends Service {
   }
 
   public void syncAll() {
-    Log.d(TAG, "isSyncingAll: " + isSyncingAll);
-    if (app.isConnected() && !isSyncingAll) {
-      isSyncingAll = true;
+    Log.d(TAG, "isSyncingAll: " + isBusySyncing);
+    if (app.isConnected() && !isBusySyncing) {
+      isBusySyncing = true;
       Log.d(TAG, "connection found, starting sync.");
       
       try {
@@ -170,7 +203,7 @@ public class SyncService extends Service {
         intent.putExtra(COLLECTION, ALL_COMPLETED);        
         sendBroadcast(intent);        
       } finally {
-        isSyncingAll = false;
+        isBusySyncing = false;
       }
     }
   }
@@ -178,7 +211,7 @@ public class SyncService extends Service {
 
   
   public void createOrUpdateRemoteTask(Task task) {
-    if (app.isConnected() && !isSyncingAll) {    
+    if (app.isConnected() && !isBusySyncing) {    
       Log.d(TAG, "connection found, #createOrUpdateRemoteTask starting.");
       if (task.id > 0) {
         Task updatedTask = api.updateTask(task, app);
@@ -197,7 +230,7 @@ public class SyncService extends Service {
   }
   
   public void deleteRemoteTask(Task task) {
-    if (app.isConnected() && !isSyncingAll) {    
+    if (app.isConnected() && !isBusySyncing) {    
       Log.d(TAG, "connection found, #deleteRemoteTask starting.");
       DeletedTask deletedTask = dbAdapter.findDeletedTask(task.id);
       if (deletedTask != null) {

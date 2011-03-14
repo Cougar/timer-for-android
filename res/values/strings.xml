@@ -55,4 +55,8 @@
     <string name="notification_ticker">Time tracking started</string>
     <string name="notification_expanded_title">Toggl</string>
     <string name="notification_expanded_content">Task timer is ticking. Tap to get details.</string>
+    
+    <string name="widget_title">toggl.com</string>
+    <string name="widget_not_signed_in">You need to sign in.</string>
+    <string name="widget_no_tasks">No tasks.</string>
 </resources>

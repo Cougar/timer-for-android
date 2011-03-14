@@ -1,5 +1,7 @@
 package com.apprise.toggl;
 
+import com.apprise.toggl.appwidget.TogglWidget;
+import com.apprise.toggl.appwidget.TogglWidget.TogglWidgetService;
 import com.apprise.toggl.remote.SyncAlarmReceiver;
 import com.apprise.toggl.remote.SyncService;
 import com.apprise.toggl.storage.DatabaseAdapter;
@@ -62,12 +64,14 @@ public class Toggl extends Application {
   public void logIn(User user) {
     setCurrentUser(user);
     storeAPIToken(user.api_token);
+    notifyTogglWidget();
   }
   
   public void logOut() {
     clearSyncSchedule();
     clearCurrentUser();
     storeAPIToken(null);
+    notifyTogglWidget();
   }
   
   public boolean isConnected() {
@@ -143,4 +147,10 @@ public class Toggl extends Application {
     }
   };
 
+  private void notifyTogglWidget() {
+    Intent intent = new Intent(this, TogglWidgetService.class);
+    intent.putExtra(TogglWidget.ACTION_USER_CHANGED, true);
+    startService(intent);
+  }
+  
 }

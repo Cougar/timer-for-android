@@ -1,5 +1,7 @@
 package com.apprise.toggl;
 
+import com.apprise.toggl.appwidget.TogglWidget;
+import com.apprise.toggl.appwidget.TogglWidget.TogglWidgetService;
 import com.apprise.toggl.remote.SyncService;
 import com.apprise.toggl.remote.TogglWebApi;
 import com.apprise.toggl.remote.exception.FailedResponseException;
@@ -261,7 +263,7 @@ public class AccountActivity extends Activity {
         }
       });
 
-      new Thread(syncAllInBackground).start();        
+      new Thread(syncAllInBackground).start();
     } else {
       showAuthFailedToast();
     }
@@ -351,7 +353,11 @@ public class AccountActivity extends Activity {
       syncService.setApiToken(app.getAPIToken());
       try {
         syncService.syncAll();
-        setRequestedOrientation(SENSOR_ORIENTATION);        
+        setRequestedOrientation(SENSOR_ORIENTATION);   
+        
+        Intent intent = new Intent(AccountActivity.this, TogglWidgetService.class);
+        intent.putExtra(TogglWidget.ACTION_RESET, true);
+        startService(intent);
       } catch (FailedResponseException e) {
         Log.e(TAG, "FailedResponseException", e);
         runOnUiThread(new Runnable() {

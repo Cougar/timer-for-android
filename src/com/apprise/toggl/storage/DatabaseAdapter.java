@@ -34,10 +34,11 @@ public class DatabaseAdapter {
   private DatabaseOpenHelper dbHelper;
   private String databaseName;
   private Toggl app;
+  private User currentUser;
 
   public DatabaseAdapter(Context context, Toggl app) {
     this.context = context;
-    this.app = app; 
+    this.app = app;
   }
   
   public void close() {
@@ -156,7 +157,7 @@ public class DatabaseAdapter {
   }
   
   public Cursor findAllWorkspaces() {
-    return db.query(Workspaces.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);    
+    return db.query(Workspaces.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);    
   }
   
   public int deleteWorkspace(long _id) {
@@ -165,7 +166,7 @@ public class DatabaseAdapter {
 
   private ContentValues setWorkspaceValues(Workspace workspace) {
     ContentValues values = new ContentValues();
-    values.put(Workspaces.OWNER_USER_ID, app.getCurrentUser()._id);
+    values.put(Workspaces.OWNER_USER_ID, getUser()._id);
     values.put(Workspaces.NAME, workspace.name);
     values.put(Workspaces.REMOTE_ID, workspace.id);
     
@@ -211,7 +212,7 @@ public class DatabaseAdapter {
   } 
   
   public Cursor findAllProjects() {
-    return db.query(Projects.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);        
+    return db.query(Projects.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);        
   }
   
   public int deleteProject(long _id) {
@@ -220,7 +221,7 @@ public class DatabaseAdapter {
   
   private ContentValues setProjectValues(Project project) {
     ContentValues values = new ContentValues();
-    values.put(Projects.OWNER_USER_ID, app.getCurrentUser()._id);    
+    values.put(Projects.OWNER_USER_ID, getUser()._id);    
     values.put(Projects.BILLABLE, project.billable);
     values.put(Projects.CLIENT_PROJECT_NAME, project.client_project_name);
     values.put(Projects.ESTIMATED_WORKHOURS, project.estimated_workhours);
@@ -270,7 +271,7 @@ public class DatabaseAdapter {
   } 
   
   public Cursor findAllClients() {
-    return db.query(Clients.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);        
+    return db.query(Clients.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);        
   }
   
   public int deleteClient(long _id) {
@@ -279,7 +280,7 @@ public class DatabaseAdapter {
   
   private ContentValues setClientValues(Client client) {
     ContentValues values = new ContentValues();
-    values.put(Clients.OWNER_USER_ID, app.getCurrentUser()._id);    
+    values.put(Clients.OWNER_USER_ID, getUser()._id);    
     values.put(Clients.NAME, client.name);
     values.put(Clients.HOURLY_RATE, client.hourly_rate);
     values.put(Clients.CURRENCY, client.currency);
@@ -302,7 +303,7 @@ public class DatabaseAdapter {
     dirtyTask.sync_dirty = true;
     dirtyTask.start = Util.formatDateToString(Util.currentDate());
     dirtyTask.stop = Util.formatDateToString(Util.currentDate());
-    dirtyTask.workspace = findWorkspace(app.getCurrentUser().default_workspace_id);
+    dirtyTask.workspace = findWorkspace(getUser().default_workspace_id);
     return createTask(dirtyTask);
   }
   
@@ -318,8 +319,7 @@ public class DatabaseAdapter {
   public Task findRunningTask() {
     Cursor cursor = db.rawQuery("SELECT * " + " FROM " + Tasks.TABLE_NAME
         + " WHERE " + Tasks.DURATION + " < 0 " + " AND " + Tasks.TABLE_NAME
-        + "." + Tasks.OWNER_USER_ID + " = ?", new String[] { String.valueOf(app
-        .getCurrentUser()._id) });
+        + "." + Tasks.OWNER_USER_ID + " = ?", new String[] { String.valueOf(getUser()._id) });
 
     if ((cursor.getCount() == 0) || !cursor.moveToFirst()) {
       cursor.close();
@@ -354,23 +354,28 @@ public class DatabaseAdapter {
         "((" + Tasks.TABLE_NAME + "." + Tasks.PROJECT_REMOTE_ID + " = " + Projects.TABLE_NAME + "." + Projects.REMOTE_ID + ") AND " + Projects.TABLE_NAME + "." + Projects.REMOTE_ID + " > 0)" +
         " OR (" + Tasks.TABLE_NAME + "." + Tasks.PROJECT_LOCAL_ID + " = " + Projects.TABLE_NAME + "." + Projects._ID + ")" +
         " WHERE strftime('%Y-%m-%d', " + Tasks.START + ", 'localtime') = strftime('%Y-%m-%d', ?, 'localtime')" +
-        " AND " + Tasks.TABLE_NAME + "." + Tasks.OWNER_USER_ID + " = ? ORDER BY start DESC", new String[] { String.valueOf(dateString), String.valueOf(app.getCurrentUser()._id) });
+        " AND " + Tasks.TABLE_NAME + "." + Tasks.OWNER_USER_ID + " = ? ORDER BY start DESC", new String[] { String.valueOf(dateString), String.valueOf(getUser()._id) });
 
     return cursor;
   }  
   
   public Cursor findAllTasksByProjectLocalId(long projectLocalId) {
-    return db.query(Tasks.TABLE_NAME, null, " owner_user_id = ? AND "+ Tasks.PROJECT_LOCAL_ID +" = ?", new String[]{ String.valueOf(app.getCurrentUser()._id), String.valueOf(projectLocalId)}, null, null, null);        
+    return db.query(Tasks.TABLE_NAME, null, " owner_user_id = ? AND "+ Tasks.PROJECT_LOCAL_ID +" = ?", new String[]{ String.valueOf(getUser()._id), String.valueOf(projectLocalId)}, null, null, null);        
   }  
   
   public Cursor findAllTasks() {
-    return db.query(Tasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);        
-  }  
+    return db.query(Tasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);        
+  }
+  
+  public Cursor findAllTasks(boolean orderAsc) {
+    return db.query(Tasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)},
+        null, null, "start " + (orderAsc ? "ASC" : "DESC"));
+  }
   
   public Cursor findTasksForAutocomplete(CharSequence constraint) {
     String sqlConstraint = "*" + constraint.toString().toUpperCase() + "*";
 
-    String[] args = new String[] { String.valueOf(app.getCurrentUser()._id), String.valueOf(sqlConstraint), String.valueOf(sqlConstraint) };
+    String[] args = new String[] { String.valueOf(getUser()._id), String.valueOf(sqlConstraint), String.valueOf(sqlConstraint) };
 
     String sqlString = "SELECT " +
     " max(" + Tasks.TABLE_NAME + "." + Tasks._ID + ") AS _id, " +
@@ -400,7 +405,7 @@ public class DatabaseAdapter {
       // if task was successfully deleted, create an entry in the deleted table
       // with the remote id
       ContentValues values = new ContentValues();
-      values.put(DeletedTasks.OWNER_USER_ID, app.getCurrentUser()._id);
+      values.put(DeletedTasks.OWNER_USER_ID, getUser()._id);
       values.put(DeletedTasks.TASK_REMOTE_ID, remoteId);
       db.insert(DeletedTasks.TABLE_NAME, DeletedTasks.TASK_REMOTE_ID, values);
     }
@@ -412,7 +417,7 @@ public class DatabaseAdapter {
     
   private ContentValues setTaskValues(Task task) {
     ContentValues values = new ContentValues();
-    values.put(Tasks.OWNER_USER_ID, app.getCurrentUser()._id);    
+    values.put(Tasks.OWNER_USER_ID, getUser()._id);    
     values.put(Tasks.REMOTE_ID, task.id);
     values.put(Tasks.DESCRIPTION, task.description);    
     values.put(Tasks.BILLABLE, task.billable);
@@ -457,7 +462,7 @@ public class DatabaseAdapter {
   }
   
   public Cursor findAllDeletedTasks() {
-    return db.query(DeletedTasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);     
+    return db.query(DeletedTasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);     
   }
   
   public void deleteDeletedTask(long _id) {
@@ -491,7 +496,7 @@ public class DatabaseAdapter {
   
   public Cursor findAllTags() {
     return db.query(Tags.TABLE_NAME, null, " owner_user_id = ? ",
-        new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, Tags.NAME + " ASC");
+        new String[]{ String.valueOf(getUser()._id)}, null, null, Tags.NAME + " ASC");
   }
   
   public boolean updateTag(Tag tag) {
@@ -507,7 +512,7 @@ public class DatabaseAdapter {
   
   private ContentValues setTagValues(Tag tag) {
     ContentValues values = new ContentValues();
-    values.put(Tags.OWNER_USER_ID, app.getCurrentUser()._id);    
+    values.put(Tags.OWNER_USER_ID, getUser()._id);    
     values.put(Tags.REMOTE_ID, tag.id);
     values.put(Tags.NAME, tag.name);
     
@@ -549,7 +554,7 @@ public class DatabaseAdapter {
   }
   
   public Cursor findAllPlannedTasks() {
-    return db.query(PlannedTasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(app.getCurrentUser()._id)}, null, null, null);     
+    return db.query(PlannedTasks.TABLE_NAME, null, " owner_user_id = ? ", new String[]{ String.valueOf(getUser()._id)}, null, null, null);     
   }
   
   public boolean updatePlannedTask(PlannedTask plannedTask) {
@@ -565,7 +570,7 @@ public class DatabaseAdapter {
   
   private ContentValues setPlannedTaskValues(PlannedTask plannedTask) {
     ContentValues values = new ContentValues();
-    values.put(PlannedTasks.OWNER_USER_ID, app.getCurrentUser()._id);    
+    values.put(PlannedTasks.OWNER_USER_ID, getUser()._id);    
     values.put(PlannedTasks.REMOTE_ID, plannedTask.id);
     values.put(PlannedTasks.ESTIMATED_WORKHOURS, plannedTask.estimated_workhours);
     values.put(PlannedTasks.NAME, plannedTask.name);
@@ -579,7 +584,7 @@ public class DatabaseAdapter {
   
   private Cursor getMovedCursor(String tableName, String columnName, long value) {
     Cursor cursor = db.rawQuery("SELECT * FROM " + tableName + " WHERE owner_user_id = ? AND " 
-        + columnName + " = ?", new String[] { String.valueOf(app.getCurrentUser()._id), String.valueOf(value) });
+        + columnName + " = ?", new String[] { String.valueOf(getUser()._id), String.valueOf(value) });
     
     if ((cursor.getCount() == 0) || !cursor.moveToFirst()) {
       cursor.close();
@@ -616,6 +621,19 @@ public class DatabaseAdapter {
   
   private void safeClose(Cursor cursor) {
     if(cursor != null) cursor.close();
+  }
+  
+  private User getUser() {
+  	if (app != null) {
+  		return app.getCurrentUser();
+  	}
+  	else {
+  		return currentUser;
+  	}
+  }
+  
+  public void setCurrentUser(User currentUser) {
+  	this.currentUser = currentUser;
   }
   
   public String getDatabaseName() {

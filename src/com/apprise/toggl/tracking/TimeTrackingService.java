@@ -1,6 +1,5 @@
 package com.apprise.toggl.tracking;
 
-
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -8,6 +7,10 @@ import java.util.TimerTask;
 import com.apprise.toggl.R;
 import com.apprise.toggl.TaskActivity;
 import com.apprise.toggl.Util;
+import com.apprise.toggl.appwidget.TogglWidget;
+import com.apprise.toggl.appwidget.TogglWidget.TogglWidgetService;
+import com.apprise.toggl.remote.SyncService;
+import com.apprise.toggl.storage.DatabaseAdapter;
 import com.apprise.toggl.storage.models.Task;
 
 import android.app.Notification;
@@ -17,7 +20,7 @@ import android.os.Binder;
 import android.os.IBinder;
 
 public class TimeTrackingService extends ServiceCompat {
-
+	
   public static final String BROADCAST_SECOND_ELAPSED = "com.apprise.toggl.tracking.BROADCAST_SECOND_ELAPSED";
   public static final String TRACKED_TASK_DURATION = "com.apprise.toggl.TRACKED_TASK_DURATION";
   public static final String TRACKED_TASK_ID = "com.apprise.toggl.tracking.TRACKED_TASK_ID";
@@ -66,6 +69,49 @@ public class TimeTrackingService extends ServiceCompat {
 
   }
   
+  @Override
+  public int onStartCommand(Intent intent, int flags, int startId) {
+  	
+  	// intent can be null when service is revived
+  	if (intent != null) {
+  	
+			// if called by app widget
+			boolean start = intent.getBooleanExtra(TogglWidget.START_TRACKING_EXTRA, false);
+			boolean stop = intent.getBooleanExtra(TogglWidget.STOP_TRACKING_EXTRA, false);
+
+			if (start || stop) {
+
+				DatabaseAdapter dbAdapter = new DatabaseAdapter(getApplicationContext(), null);
+				dbAdapter.open();
+
+				long userId = intent.getLongExtra(TogglWidget.USER_ID_EXTRA, -1);
+				dbAdapter.setCurrentUser(dbAdapter.findUser(userId));
+
+				long taskId = intent.getLongExtra(TogglWidget.TASK_ID_EXTRA, -1);
+				Task appWidgetTask = dbAdapter.findTask(taskId);
+
+				if (start) {
+					dbAdapter.close();
+
+					startTracking(appWidgetTask);
+				} else if (stop) {
+					appWidgetTask.duration = stopTracking();
+
+					dbAdapter.updateTask(appWidgetTask);
+					dbAdapter.close();
+					
+			    Intent syncServiceIntent = new Intent(this, SyncService.class);
+			    syncServiceIntent.putExtra(SyncService.SYNC_TASK_EXTRA_ID, appWidgetTask._id);
+			    startService(syncServiceIntent);
+				}
+
+			}
+
+  	}
+  	
+  	return START_STICKY;
+  }
+  
   public long getId() {
     if (task != null) {
       return task._id;
@@ -101,6 +147,7 @@ public class TimeTrackingService extends ServiceCompat {
     task = null;
     runningTimeStart = 0l;
     isTracking = false;
+    notifyTogglWidget();
     stopSelf();
     return endDuration;
   }
@@ -158,6 +205,12 @@ public class TimeTrackingService extends ServiceCompat {
   
   private void pullFromForeground() {
     stopForegroundCompat(NOTIFICATION_ID);
+  }
+  
+  private void notifyTogglWidget() {
+    Intent intent = new Intent(this, TogglWidgetService.class);
+    intent.putExtra(TogglWidget.ACTION_STOPPED_TRACKING, true);
+    startService(intent);
   }
   
 }
