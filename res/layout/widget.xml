@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:background="@drawable/appwidget_bg_alpha_80">
+
+  <LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="20dp"
+    android:paddingTop="3dp"
+    android:paddingLeft="15dp">
+
+    <ImageView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:background="@drawable/widget_icon"/>
+    
+    <TextView
+	    android:layout_width="wrap_content"
+	    android:layout_height="fill_parent"
+	    android:layout_marginLeft="2dp"
+	    android:textColor="#fff"
+	    android:textSize="10dp"
+	    android:text="@string/widget_title"/>
+    
+  </LinearLayout>
+
+  <LinearLayout
+    android:id="@+id/widget_top_layout"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="50dp"
+    android:focusable="true"
+    android:clickable="true">
+
+	  <LinearLayout
+	    android:orientation="horizontal"
+	    android:layout_width="fill_parent"
+	    android:layout_height="24dp"
+	    android:paddingTop="5dp">
+
+	    <TextView
+	      android:id="@+id/widget_top_text"
+	      android:layout_width="fill_parent"
+	      android:layout_height="wrap_content"
+	      android:layout_weight="1"
+	      android:paddingLeft="15dp"
+	      android:paddingRight="15dp"
+	      android:textStyle="bold"
+	      android:textColor="#fff"
+	      android:singleLine="true"
+	      android:ellipsize="end"/>
+      
+      <TextView
+        android:id="@+id/widget_top_right_text"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:paddingRight="15dp"
+        android:textStyle="bold"
+        android:textColor="#fff"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="right"/>
+    
+    </LinearLayout>
+    
+    <TextView
+      android:id="@+id/widget_bottom_text"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:paddingLeft="15dp"
+      android:textColor="#fff"
+      android:singleLine="true"
+      android:ellipsize="end"/>
+    
+  </LinearLayout>
+
+  <LinearLayout
+    android:id="@+id/widget_bottom_layout"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="63dp"
+    android:paddingTop="3dp">
+
+	  <ImageButton
+	    android:id="@+id/widget_previous"
+	    android:layout_width="53dp"
+	    android:layout_height="53dp"
+	    android:layout_marginLeft="15dp"
+	    android:background="@drawable/widget_left_selector"/>
+
+    <ImageButton
+      android:id="@+id/widget_toggle_tracking"
+      android:layout_width="53dp"
+      android:layout_height="53dp"
+      android:layout_marginLeft="5dp"
+      android:layout_marginRight="5dp"
+      android:background="@null"/>
+
+    <ImageButton
+      android:id="@+id/widget_next"
+      android:layout_width="53dp"
+      android:layout_height="53dp"
+      android:background="@drawable/widget_right_selector"/>
+      
+    <ImageButton
+      android:id="@+id/widget_add"
+      android:layout_width="53dp"
+      android:layout_height="53dp"
+      android:layout_marginLeft="39dp"
+      android:background="@drawable/widget_add_selector"/>
+
+  </LinearLayout>
+
+</LinearLayout>
+
