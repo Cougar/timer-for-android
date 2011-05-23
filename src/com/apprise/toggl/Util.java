@@ -149,6 +149,7 @@ public class Util {
       try {
         string = jsonArray.join(separator);
         string = string.replaceAll("\"", "");
+        string = string.replace("\\", "");
       } catch (JSONException e) {
         e.printStackTrace();
       }
