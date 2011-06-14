@@ -94,7 +94,7 @@ public class TimeTrackingService extends ServiceCompat {
 					dbAdapter.close();
 
 					startTracking(appWidgetTask);
-				} else if (stop) {
+				} else if (stop && isTracking) {
 					appWidgetTask.duration = stopTracking();
 
 					dbAdapter.updateTask(appWidgetTask);

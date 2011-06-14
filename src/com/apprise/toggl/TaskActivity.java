@@ -291,8 +291,13 @@ public class TaskActivity extends ApplicationActivity {
   }
   
   private boolean todaysTask() {
-    Date startDate = Util.parseStringToDate(task.start);
-    return Util.todaysDateOrLater(startDate);
+    if (task.start != null) {
+      Date startDate = Util.parseStringToDate(task.start);
+      return Util.todaysDateOrLater(startDate);
+    }
+    else {
+      return false;
+    }
   }
 
   private void updatePlannedTasks() {
